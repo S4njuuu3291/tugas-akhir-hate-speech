@@ -1,4 +1,4 @@
-# Python
+# Python - Keep source code, ignore cache only
 __pycache__/
 *.py[cod]
 *$py.class
@@ -22,6 +22,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+# Allow tracking .py files in main project
+!**/*.py
 
 # Large Model files
 *.h5
