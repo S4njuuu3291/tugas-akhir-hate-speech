@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Model files
+*.h5
+*.keras
+*.pkl
+*.npy
+*.vec
+*.zip
+*.pth
+*.pt
+*.pb
+*.onnx
+
+# Data files
+*.csv
+*.parquet
+*.json
+fasttext-id-mini
+
+# Documentation
+*.pdf
+*.docx
+
+# Large directories
+DATA/fasttext-id-mini
+EXPLAINABILITY/results/
+_ARCHIVE/
+node_modules/
+.git/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment
+.env
+.env.local
