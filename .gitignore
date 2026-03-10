@@ -23,34 +23,31 @@ wheels/
 .installed.cfg
 *.egg
 
-# Model files
+# Large Model files
 *.h5
 *.keras
 *.pkl
-*.npy
-*.vec
-*.zip
 *.pth
 *.pt
 *.pb
 *.onnx
+*.zip
 
-# Data files
+# Large Data/Embedding files
+*.npy
+embedding_matrix.npy
+/fasttext-id-mini
+fasttext-id-mini/
+
+# Large CSV files - exclude but allow tracked ones
 *.csv
-*.parquet
-*.json
-fasttext-id-mini
 
-# Documentation
+# Archives to ignore
+_ARCHIVE/
+
+# Large documentation
 *.pdf
 *.docx
-
-# Large directories
-DATA/fasttext-id-mini
-EXPLAINABILITY/results/
-_ARCHIVE/
-node_modules/
-.git/
 
 # IDE
 .vscode/
@@ -66,3 +63,6 @@ node_modules/
 # Environment
 .env
 .env.local
+
+# Node (if needed)
+node_modules/
