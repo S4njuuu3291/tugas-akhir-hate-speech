@@ -26,7 +26,7 @@ def predict_on_subset(subset, x_instance, clf, target_index):
 
 def kernel_weight(M, k):
     if k == 0 or k == M:
-        return 1e-6
+        return 1e6
     else:
         return (M - 1) / (scipy.special.comb(M, k) * k * (M - k))
 
