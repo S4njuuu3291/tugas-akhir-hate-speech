@@ -1,0 +1,6 @@
+1. okay 
+2. okay
+3. okay
+4. output setiap head = (10,64)
+ukuran setelah concat = 10,768
+ukuran setelah w0 = 10,768
