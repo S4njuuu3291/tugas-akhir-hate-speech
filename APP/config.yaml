@@ -1,0 +1,26 @@
+# ============================================================
+# KONFIGURASI PATH FILE
+# ============================================================
+paths:
+  kamus_alay: "DATA/raw/kamus_alay_normal.csv"
+  model_bert: "MODELS/model_hs_indobert"
+  artifact_baseline: "MODELS/baseline/model_artifact_2.pkl"
+
+# ============================================================
+# THRESHOLD & ANGKA
+# ============================================================
+preprocessing:
+  max_words: 40
+
+model:
+  bert:
+    max_length: 128
+    thresholds: [0.16, 0.64, 0.18, 0.66, 0.12, 0.34]
+
+ui:
+  text_area_height: 150
+  shap_samples:
+    min: 64
+    max: 2048
+    default: 256
+    step: 64

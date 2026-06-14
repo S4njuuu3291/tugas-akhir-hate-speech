@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import tensorflow as tf
+import yaml
 from transformers import AutoTokenizer, TFAutoModelForSequenceClassification
 
 # ============================
@@ -16,6 +17,17 @@ from transformers import AutoTokenizer, TFAutoModelForSequenceClassification
 # ============================
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
+
+# ============================
+# LOAD CONFIG
+# ============================
+CONFIG_PATH = Path(__file__).parent / "config.yaml"
+with open(CONFIG_PATH) as f:
+    CONFIG = yaml.safe_load(f)
+paths = CONFIG["paths"]
+preproc_cfg = CONFIG["preprocessing"]
+model_cfg = CONFIG["model"]
+ui_cfg = CONFIG["ui"]
 
 # ============================
 # IMPORT SHAP IMPLEMENTATIONS
@@ -69,7 +81,7 @@ LABEL_PRETTY = {
 
 @st.cache_data
 def load_cleaning_resources():
-    alay_path = project_root / "DATA" / "raw" / "new_kamusalay.csv"
+    alay_path = project_root / paths["kamus_alay"]
     alay_df = pd.read_csv(alay_path)
     alay_dict = dict(zip(alay_df["alay"], alay_df["normal"]))
     return alay_dict
@@ -81,7 +93,9 @@ RE_CLEAN = re.compile(r"http\S+|www\S+|https\S+|@\w+|\\n|\n|\brt\b|[^a-zA-Z\s]")
 RE_MULTISPACE = re.compile(r"\s+")
 RE_REPEATED = re.compile(r"(.)\1{2,}")
 
-def clean_for_shap(text, alay_map, max_words=40):
+def clean_for_shap(text, alay_map, max_words=None):
+    if max_words is None:
+        max_words = preproc_cfg["max_words"]
     if pd.isna(text):
         return ""
     # Hanya hapus simbol/URL, JANGAN hapus kata (stopwords)
@@ -128,8 +142,8 @@ def load_bert(path):
     model = TFAutoModelForSequenceClassification.from_pretrained(path)
     return tokenizer, model
 
-bert_tokenizer, bert_model = load_bert(str(project_root / "MODELS" / "model_hs_indobert"))
-BERT_THRESHOLDS = np.array([0.16, 0.64, 0.18, 0.66, 0.12, 0.34])
+bert_tokenizer, bert_model = load_bert(str(project_root / paths["model_bert"]))
+BERT_THRESHOLDS = np.array(model_cfg["bert"]["thresholds"])
 
 
 @st.cache_resource
@@ -137,7 +151,7 @@ def load_artifact(path):
     with open(path, "rb") as f:
         return pickle.load(f)
 
-artifact = load_artifact(str(project_root / "MODELS" / "baseline" / "model_artifact_2.pkl"))
+artifact = load_artifact(str(project_root / paths["artifact_baseline"]))
 vectorizer = artifact["vectorizer"]
 labels = artifact["label_columns"]
 features_list = vectorizer.get_feature_names_out()
@@ -163,7 +177,7 @@ MODEL_MAP = {
 # ============================================================
 def predict_bert_batch(text, model, tokenizer):
     inputs = tokenizer(
-        text, return_tensors="tf", truncation=True, padding=True, max_length=128
+        text, return_tensors="tf", truncation=True, padding=True, max_length=model_cfg["bert"]["max_length"]
     )
     logits = model(inputs).logits
     probs = tf.sigmoid(logits).numpy()[0]
@@ -172,9 +186,9 @@ def predict_bert_batch(text, model, tokenizer):
 # ============================================================
 # UI
 # ============================================================
-st.title("🛡️ Hate speech Classification + SHAP")
+st.title("Hate Speech Classification + SHAP")
 
-text_input = st.text_area("Masukkan kalimat yang ingin dianalisis:", height=150)
+text_input = st.text_area("Masukkan kalimat yang ingin dianalisis:", height=ui_cfg["text_area_height"])
 
 col1, col2 = st.columns(2)
 with col1:
@@ -182,7 +196,13 @@ with col1:
         "Arsitektur Model:", ["Klasik (TF-IDF + ML)", "BERT"], horizontal=True
     )
 with col2:
-    num_samples = st.number_input("Sampel KernelSHAP:", 64, 2048, 256, 64)
+    num_samples = st.number_input(
+        "Sampel KernelSHAP:",
+        ui_cfg["shap_samples"]["min"],
+        ui_cfg["shap_samples"]["max"],
+        ui_cfg["shap_samples"]["default"],
+        ui_cfg["shap_samples"]["step"],
+    )
 
 if model_type == "Klasik (TF-IDF + ML)":
     model_name = st.selectbox("Model Spesifik:", list(MODEL_MAP.keys()))
@@ -197,7 +217,7 @@ if st.button("Mulai Analisis Prediksi", type="primary"):
 if st.session_state.predicted:
     current_text = st.session_state.cleaned_text
     st.markdown("---")
-    st.subheader("📊 Hasil Prediksi Model")
+    st.subheader("Hasil Prediksi Model")
 
     if model_type == "Klasik (TF-IDF + ML)":
         clf, thresholds = MODEL_MAP[model_name]
@@ -214,9 +234,9 @@ if st.session_state.predicted:
         det = [
             LABEL_PRETTY.get(labels[i], labels[i]) for i, v in enumerate(pred) if v == 1
         ]
-        st.error(f"⚠️ **Terdeteksi Hate speech!** Kategori: **{', '.join(det)}**.")
+        st.error(f"**Terdeteksi Hate Speech!** Kategori: **{', '.join(det)}**.")
     else:
-        st.success("✅ **Teks Aman.** Tidak terdeteksi ujaran kebencian.")
+        st.success("**Teks Aman.** Tidak terdeteksi ujaran kebencian.")
 
     df_res = pd.DataFrame(
         {
@@ -225,12 +245,12 @@ if st.session_state.predicted:
             "Threshold": thresholds
             if model_type == "Klasik (TF-IDF + ML)"
             else BERT_THRESHOLDS,
-            "Hasil": ["⚠️ Terdeteksi" if x == 1 else "✅ Aman" for x in pred],
+            "Hasil": ["Terdeteksi" if x == 1 else "Aman" for x in pred],
         }
     )
     st.table(df_res)
 
-    st.subheader("🔍 Penjelasan Kontribusi Kata (SHAP)")
+    st.subheader("Penjelasan Kontribusi Kata (SHAP)")
     tabs = st.tabs([LABEL_PRETTY.get(l, l) for l in labels])
     for i, label in enumerate(labels):
         with tabs[i]:
@@ -275,4 +295,4 @@ if st.session_state.predicted:
                 fig_bert = plot_shap_classic(base, np.array(shap_vals), feats, current_text, label)
                 st.pyplot(fig_bert)
 
-            st.caption(f"⏱️ Komputasi: {time.time() - t_start:.2f} detik")
+            st.caption(f"Komputasi: {time.time() - t_start:.2f} detik")
